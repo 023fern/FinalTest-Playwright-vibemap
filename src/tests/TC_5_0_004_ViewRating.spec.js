@@ -1,7 +1,7 @@
 require("../Hooks/testResultHook");
 const { test, expect } = require("@playwright/test");
 
-test("TC 5.0.003 - แสดงรีวิวของสถานที่สำเร็จ", async ({ browser }) => {
+test("TC 5.0.004 - แสดงคะแนนรีวิวของสถานที่สำเร็จ", async ({ browser }) => {
   const context = await browser.newContext({
     permissions: ["geolocation"],
     geolocation: { latitude: 13.7563, longitude: 100.5018 },
@@ -33,7 +33,7 @@ test("TC 5.0.003 - แสดงรีวิวของสถานที่ส�
 
   // เลือกหมวดหมู่ "สวนสาธารณะ"
   const categoryBtn = page.getByRole("heading", {
-    name: "สวนสาธารณะ",
+    name: "บาร์",
   });
 
   await categoryBtn.waitFor({
@@ -59,29 +59,35 @@ test("TC 5.0.003 - แสดงรีวิวของสถานที่ส�
   const placeName = page.locator("main h1").first();
   await expect(placeName).toBeVisible({ timeout: 15000 });
 
-  // =========================
-  // ตรวจสอบรีวิวของสถานที่
-  // =========================
+  // // =========================
+  // // ตรวจสอบรีวิวของสถานที่
+  // // =========================
 
+  // const reviewCards = page.locator(".bg-white.p-5");
+
+  // // ต้องแสดงรีวิวทั้งหมด 5 รายการ
+  // await expect(reviewCards).toHaveCount(5, {
+  //   timeout: 15000,
+  // });
+
+  // // ตรวจสอบว่าทุกรีวิวแสดงอยู่
+  // for (let i = 0; i < 5; i++) {
+  //   await expect(reviewCards.nth(i)).toBeVisible();
+  // }
+
+  // ตรวจสอบคะแนนรีวิว
   const reviewCards = page.locator(".bg-white.p-5");
 
-  // ต้องแสดงรีวิวทั้งหมด 5 รายการ
   await expect(reviewCards).toHaveCount(5, {
     timeout: 15000,
   });
 
-  // ตรวจสอบว่าทุกรีวิวแสดงอยู่
-  for (let i = 0; i < 5; i++) {
-    await expect(reviewCards.nth(i)).toBeVisible();
-  }
-
-  // ตรวจสอบคะแนนของรีวิวแต่ละรายการ
   const ratings = [];
 
   for (let i = 0; i < 5; i++) {
     const rating = reviewCards
       .nth(i)
-      .getByText(/^[1-5]\.0$/, { exact: true })
+      .getByText(/^[1-5](?:\.0)?$/, { exact: true })
       .first();
 
     await expect(rating).toBeVisible();
@@ -90,17 +96,16 @@ test("TC 5.0.003 - แสดงรีวิวของสถานที่ส�
     ratings.push(Number(ratingValue.trim()));
   }
 
-  // ตรวจสอบว่าเรียงคะแนนจากมากไปน้อย
+  // ตรวจสอบว่าเรียงจากคะแนนสูงไปต่ำ
   for (let i = 0; i < ratings.length - 1; i++) {
     expect(ratings[i]).toBeGreaterThanOrEqual(ratings[i + 1]);
   }
-
   await page.evaluate(() => {
     window.scrollTo(0, document.body.scrollHeight);
   });
 
   await page.screenshot({
-    path: "evidence/TC_5_0_003_ViewReviews.png",
+    path: "evidence/TC_5_0_004_ViewRating.png",
     fullPage: true,
   });
 
