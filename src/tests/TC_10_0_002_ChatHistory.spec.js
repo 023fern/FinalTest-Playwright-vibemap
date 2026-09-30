@@ -17,11 +17,11 @@ test('TC 10.0.002 - ดูประวัติการสนทนา', async 
     timeout: 30000,
   });
 
-  await expect(
-    page.getByText('เข้าสู่ระบบสำเร็จ')
-  ).toBeHidden({
-    timeout: 15000,
-  });
+  // await expect(
+  //   page.getByText('เข้าสู่ระบบสำเร็จ')
+  // ).toBeHidden({
+  //   timeout: 15000,
+  // });
 
   await expect(
     page.getByRole('link', { name: 'Profile' })

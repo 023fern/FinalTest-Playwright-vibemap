@@ -1,89 +1,120 @@
+require('dotenv').config();
 require('../Hooks/testResultHook');
+
 const { test, expect } = require('@playwright/test');
 
 test.setTimeout(120000);
 
-test('TC 4.0.003 - ตรวจสอบข้อความที่มีอักขระพิเศษ', async ({ browser }) => {
-
-  console.log('=== Start Test ===');
+test('TC_3_0_004 - ตรวจสอบข้อความที่มีอักขระพิเศษ', async ({ browser }) => {
 
   const context = await browser.newContext({
     permissions: ['geolocation'],
     geolocation: {
       latitude: 13.7563,
-      longitude: 100.5018
+      longitude: 100.5018,
     },
   });
 
   const page = await context.newPage();
 
-  // Login
+  // =====================================================
+  // 1. Login
+  // =====================================================
+
   await page.goto('https://moodlocation.vercel.app/login');
 
-  console.log('Login page loaded');
+  await page
+    .getByPlaceholder('example@mail.com')
+    .fill(process.env.MOOD_USER_EMAIL);
 
-  await page.getByPlaceholder('your@email.com')
-    .fill('664259023@webmail.npru.ac.th');
-
-  await page.locator('input[type="password"]')
-    .fill('111111');
+  await page
+    .locator('input[type="password"]')
+    .fill(process.env.MOOD_USER_PASSWORD);
 
   await page.click('button[type="submit"]');
 
-  console.log('Login button clicked');
-
-  await page.waitForLoadState('networkidle');
-
-  console.log('Login success');
-
-
-  // Textbox AI
-  const aiInput = page.getByRole('textbox', {
-    name: 'พิมพ์บอกความรู้สึกกับ AI...'
-  });
-
-  await expect(aiInput).toBeVisible();
-
-
-  // กรอกข้อความที่ไม่มีความหมาย
-  await aiInput.fill('$%^*(%$');
-
-  await expect(aiInput)
-    .toHaveValue('$%^*(%$');
-
-
-  // ปุ่มค้นหา
-  const searchBtn = page.getByRole('button', {
-    name: /ค้นหา/i
-  });
-
-  await expect(searchBtn).toBeVisible();
-
-
-  await searchBtn.click();
-
-
-  // ตรวจสอบ Alert / Validation Message
+  // รอหน้า Home
   await expect(
-    page.getByText('กรุณากรอกข้อความที่สื่อความหมาย')
+    page.getByRole('textbox', {
+      name: 'พิมพ์บอกความรู้สึกกับ AI...',
+    })
   ).toBeVisible({
-    timeout: 30000
+    timeout: 15000,
   });
 
+  // =====================================================
+  // 2. กรอกข้อความที่มีอักขระพิเศษ
+  // =====================================================
 
-  console.log('Validation message displayed');
+  const aiInput = page.getByRole('textbox', {
+    name: 'พิมพ์บอกความรู้สึกกับ AI...',
+  });
 
+  const inputData = '!!!@@@###$$$';
 
-  // Screenshot
+  await aiInput.fill(inputData);
+
+  await expect(aiInput).toHaveValue(inputData);
+
+  // =====================================================
+  // 3. กดค้นหา
+  // =====================================================
+
+  const searchButton = page.getByRole('button', {
+    name: 'ค้นหา',
+  });
+
+  await expect(searchButton).toBeVisible({
+    timeout: 10000,
+  });
+
+  await searchButton.click();
+
+  // =====================================================
+  // 4. ตรวจสอบข้อความแจ้งเตือน
+  // =====================================================
+
+  const alertDialog = page.getByRole('dialog', {
+    name: 'แจ้งเตือน',
+  });
+
+  await expect(alertDialog).toBeVisible({
+    timeout: 30000,
+  });
+
+  await expect(
+    alertDialog.getByText(
+      'ข้อความไม่สามารถค้นหาได้ หรือไม่พบการค้นหาความรู้สึกนั้น (ตัวเลขและสัญลักษณ์ไม่สื่อถึงอารมณ์)',
+      { exact: true }
+    )
+  ).toBeVisible({
+    timeout: 10000,
+  });
+
+  // =====================================================
+  // 5. ตรวจสอบปุ่ม OK
+  // =====================================================
+
+  const okButton = alertDialog.getByRole('button', {
+    name: 'OK',
+  });
+
+  await expect(okButton).toBeVisible({
+    timeout: 10000,
+  });
+
+  // =====================================================
+  // 6. Screenshot
+  // =====================================================
+
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+  });
+
   await page.screenshot({
-    path: 'evidence/TC_4_0_003_SpecialCharacterValidation.png',
-    fullPage: true
+    path: 'evidence/TC_3_0_004_SpecialCharacterInput.png',
+    fullPage: true,
   });
-
-
-  console.log('Screenshot saved');
 
   await context.close();
-
-  console.log('=== Test Finished ===');
 });

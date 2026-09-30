@@ -1,4 +1,5 @@
 require('../Hooks/testResultHook');
+
 const { test, expect } = require('@playwright/test');
 
 test.setTimeout(120000);
@@ -33,8 +34,6 @@ test('TC 3.0.001 - วิเคราะห์อารมณ์จากข้�
 
   await page.click('button[type="submit"]');
 
-  console.log('Login button clicked');
-
   // รอหน้า Home หลัง Login
   await expect(
     page.getByRole('textbox', {
@@ -50,13 +49,15 @@ test('TC 3.0.001 - วิเคราะห์อารมณ์จากข้�
   // 2. กรอกข้อความให้ AI วิเคราะห์
   // =====================================================
 
+  const userFeeling = 'วันนี้ปวดขามากเดินเยอะ';
+
   const aiInput = page.getByRole('textbox', {
     name: 'พิมพ์บอกความรู้สึกกับ AI...',
   });
 
-  await aiInput.fill('ง่วงจัง');
+  await aiInput.fill(userFeeling);
 
-  await expect(aiInput).toHaveValue('ง่วงจัง');
+  await expect(aiInput).toHaveValue(userFeeling);
 
   // =====================================================
   // 3. กดค้นหา
@@ -72,10 +73,57 @@ test('TC 3.0.001 - วิเคราะห์อารมณ์จากข้�
 
   await searchBtn.click();
 
+ // =====================================================
+// 4. ตรวจสอบผลการวิเคราะห์อารมณ์
+// =====================================================
+
+await expect(
+  page.getByText('สิ่งที่วิเคราะห์ได้', {
+    exact: true,
+  })
+).toBeVisible({
+  timeout: 90000,
+});
+
+await expect(
+  page.getByText('เหตุผล', {
+    exact: true,
+  })
+).toBeVisible({
+  timeout: 90000,
+});
+
+await expect(
+  page.getByText('สถานที่ที่แนะนำ', {
+    exact: true,
+  })
+).toBeVisible({
+  timeout: 90000,
+});
   // =====================================================
-  // 4. ตรวจสอบการ์ดสถานที่
+  // 5. ตรวจสอบว่ามีการ์ดสถานที่แนะนำ
   // =====================================================
 
+  const placeCards = page
+    .getByRole('button', {
+      name: 'ดูรูปภาพและรีวิว',
+    });
+
+  await expect(
+    placeCards.first()
+  ).toBeVisible({
+    timeout: 90000,
+  });
+
+  const placeCount = await placeCards.count();
+
+  expect(placeCount).toBeGreaterThan(0);
+
+  console.log(
+    `ระบบแสดงสถานที่แนะนำจำนวน ${placeCount} แห่ง`
+  );
+
+  // ตรวจว่าชื่อสถานที่มีการแสดงผล โดยไม่กำหนดชื่อเฉพาะ
   const placeCardTitle = page
     .locator('main h3:visible')
     .first();
@@ -85,13 +133,17 @@ test('TC 3.0.001 - วิเคราะห์อารมณ์จากข้�
   });
 
   console.log(
-    'Place card loaded:',
+    'สถานที่แนะนำ:',
     await placeCardTitle.innerText()
   );
 
   // =====================================================
-  // 5. Screenshot
+  // 6. Screenshot
   // =====================================================
+
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+  });
 
   await page.screenshot({
     path: 'evidence/TC_3_0_001_EmotionAnalyzeSuccess.png',

@@ -23,11 +23,11 @@ test('TC 8.0.002 - การดูแผนการเดินทางสำ�
 
   await page
     .getByPlaceholder('example@mail.com')
-    .fill(process.env.MOOD_EMAIL);
+    .fill(process.env.MOOD_USER_EMAIL);
 
   await page
     .locator('input[type="password"]')
-    .fill(process.env.MOOD_PASSWORD);
+    .fill(process.env.MOOD_USER_PASSWORD);
 
   await page.click('button[type="submit"]');
 
