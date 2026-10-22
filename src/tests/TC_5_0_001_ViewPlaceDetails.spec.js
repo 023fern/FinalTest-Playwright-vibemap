@@ -8,7 +8,36 @@ test("TC 5.0.001 - ดูรายละเอียดสถานที่ส�
   });
 
   const page = await context.newPage();
+// =====================================================
+  // Mock Geolocation
+  // =====================================================
+  await page.addInitScript(() => {
+    const mockPosition = {
+      coords: {
+        latitude: 13.7563,
+        longitude: 100.5018,
+        accuracy: 10,
+        altitude: null,
+        altitudeAccuracy: null,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    };
 
+    navigator.geolocation.getCurrentPosition = (success) => {
+      success(mockPosition);
+    };
+
+    navigator.geolocation.watchPosition = (success) => {
+      success(mockPosition);
+      return 1;
+    };
+
+    navigator.geolocation.clearWatch = () => {};
+  });
+
+  
   await page.goto("https://moodlocation.vercel.app/login");
   await page
     .getByPlaceholder("example@mail.com")

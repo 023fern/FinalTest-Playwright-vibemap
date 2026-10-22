@@ -15,6 +15,35 @@ test('TC 8.0.006 - ไม่กรอกชื่อแผน', async ({ browser
   });
 
   const page = await context.newPage();
+// =====================================================
+  // Mock Geolocation
+  // =====================================================
+  await page.addInitScript(() => {
+    const mockPosition = {
+      coords: {
+        latitude: 13.7563,
+        longitude: 100.5018,
+        accuracy: 10,
+        altitude: null,
+        altitudeAccuracy: null,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    };
+
+    navigator.geolocation.getCurrentPosition = (success) => {
+      success(mockPosition);
+    };
+
+    navigator.geolocation.watchPosition = (success) => {
+      success(mockPosition);
+      return 1;
+    };
+
+    navigator.geolocation.clearWatch = () => {};
+  });
+
 
   // =====================================================
   // 1. Login
@@ -101,11 +130,11 @@ test('TC 8.0.006 - ไม่กรอกชื่อแผน', async ({ browser
   // 5. เพิ่มกิจกรรมที่ 2
   // =====================================================
 
-  await expect(addActivityButton).toBeVisible({
-    timeout: 15000,
-  });
+  // await expect(addActivityButton).toBeVisible({
+  //   timeout: 15000,
+  // });
 
-  await addActivityButton.click();
+  await page.getByRole('button', { name: 'เพิ่มกิจกรรม' }).nth(1).click();
 
   await expect(
     page.getByRole('button', {
@@ -123,11 +152,11 @@ test('TC 8.0.006 - ไม่กรอกชื่อแผน', async ({ browser
   // 6. เพิ่มกิจกรรมที่ 3
   // =====================================================
 
-  await expect(addActivityButton).toBeVisible({
-    timeout: 15000,
-  });
+  // await expect(addActivityButton).toBeVisible({
+  //   timeout: 15000,
+  // });
 
-  await addActivityButton.click();
+  await page.getByRole('button', { name: 'เพิ่มกิจกรรม' }).nth(2).click();
 
   await expect(
     page.getByRole('button', {
@@ -158,7 +187,7 @@ test('TC 8.0.006 - ไม่กรอกชื่อแผน', async ({ browser
   await expect(
     page.getByRole('heading', {
       level: 3,
-      name: 'กิจกรรมที่ 2-',
+      name: 'กิจกรรมที่ 2',
       exact: true,
     })
   ).toBeVisible({

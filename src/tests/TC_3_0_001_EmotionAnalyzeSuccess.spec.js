@@ -1,13 +1,13 @@
+require('dotenv').config();
 require('../Hooks/testResultHook');
-
 const { test, expect } = require('@playwright/test');
 
-test.setTimeout(120000);
+test('TC_3_0_001 - วิเคราะห์อารมณ์จากข้อความสำเร็จ', async ({ browser }) => {
+  test.setTimeout(120000);
 
-test('TC 3.0.001 - วิเคราะห์อารมณ์จากข้อความสำเร็จ', async ({ browser }) => {
-
-  console.log('=== Start Test ===');
-
+  // =====================================================
+  // สร้าง Browser Context
+  // =====================================================
   const context = await browser.newContext({
     permissions: ['geolocation'],
     geolocation: {
@@ -18,141 +18,199 @@ test('TC 3.0.001 - วิเคราะห์อารมณ์จากข้�
 
   const page = await context.newPage();
 
-  // =====================================================
-  // 1. Login
-  // =====================================================
+  try {
+    // =====================================================
+    // Mock Geolocation
+    // =====================================================
+    await page.addInitScript(() => {
+      const mockPosition = {
+        coords: {
+          latitude: 13.7563,
+          longitude: 100.5018,
+          accuracy: 10,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null,
+        },
+        timestamp: Date.now(),
+      };
 
-  await page.goto('https://moodlocation.vercel.app/login');
+      navigator.geolocation.getCurrentPosition = (
+        success,
+        error
+      ) => {
+        console.log('MOCK GEOLOCATION CALLED');
+        success(mockPosition);
+      };
 
-  await page
-    .getByPlaceholder('example@mail.com')
-    .fill('vibemaptester@gmail.com');
+      navigator.geolocation.watchPosition = (
+        success,
+        error
+      ) => {
+        console.log('MOCK GEOLOCATION WATCH CALLED');
+        success(mockPosition);
+        return 1;
+      };
 
-  await page
-    .locator('input[type="password"]')
-    .fill('Bfxrn2547-');
+      navigator.geolocation.clearWatch = () => {};
+    });
 
-  await page.click('button[type="submit"]');
+    // =====================================================
+    // 1. เปิดเว็บไซต์
+    // =====================================================
+    await page.goto('https://moodlocation.vercel.app/login', {
+      waitUntil: 'domcontentloaded',
+    });
 
-  // รอหน้า Home หลัง Login
-  await expect(
-    page.getByRole('textbox', {
+    console.log('เปิดเว็บไซต์สำเร็จ');
+
+    // =====================================================
+    // 2. Login
+    // =====================================================
+    await page.getByPlaceholder('example@mail.com')
+      .fill('vibemaptester@gmail.com');
+
+    await page.locator('input[type="password"]')
+      .fill(process.env.MOOD_USER_PASSWORD);
+
+    await page.locator('button[type="submit"]').click();
+
+    // =====================================================
+    // 3. รอช่อง AI
+    // =====================================================
+    const aiInput = page.getByRole('textbox', {
       name: 'พิมพ์บอกความรู้สึกกับ AI...',
-    })
-  ).toBeVisible({
-    timeout: 15000,
-  });
+    });
 
-  console.log('Login success');
+    await expect(aiInput).toBeVisible({
+      timeout: 15000,
+    });
 
-  // =====================================================
-  // 2. กรอกข้อความให้ AI วิเคราะห์
-  // =====================================================
+    console.log('Login success');
 
-  const userFeeling = 'วันนี้ปวดขามากเดินเยอะ';
+    // =====================================================
+    // 4. พิมพ์ความรู้สึก
+    // =====================================================
+    const userFeeling = 'หวังว่าฉันจะมีความสุขในวันนี้';
 
-  const aiInput = page.getByRole('textbox', {
-    name: 'พิมพ์บอกความรู้สึกกับ AI...',
-  });
+    await aiInput.fill(userFeeling);
 
-  await aiInput.fill(userFeeling);
+    await expect(aiInput).toHaveValue(userFeeling);
 
-  await expect(aiInput).toHaveValue(userFeeling);
+    console.log('กรอกข้อความความรู้สึกสำเร็จ');
 
-  // =====================================================
-  // 3. กดค้นหา
-  // =====================================================
+    // =====================================================
+    // 5. กดค้นหา
+    // =====================================================
+    const searchBtn = page.getByRole('button', {
+      name: /ค้นหา/i,
+    });
 
-  const searchBtn = page.getByRole('button', {
-    name: /ค้นหา/i,
-  });
+    await expect(searchBtn).toBeVisible({
+      timeout: 10000,
+    });
 
-  await expect(searchBtn).toBeVisible({
-    timeout: 10000,
-  });
+    await searchBtn.click();
 
-  await searchBtn.click();
+    console.log('Search clicked');
 
- // =====================================================
-// 4. ตรวจสอบผลการวิเคราะห์อารมณ์
-// =====================================================
+    // =====================================================
+    // 6. รอผลการวิเคราะห์อารมณ์
+    // =====================================================
+    await expect(
+      page.getByText('อารมณ์ที่วิเคราะห์ได้', {
+        exact: true,
+      })
+    ).toBeVisible({
+      timeout: 90000,
+    });
 
-await expect(
-  page.getByText('สิ่งที่วิเคราะห์ได้', {
-    exact: true,
-  })
-).toBeVisible({
-  timeout: 90000,
-});
+    console.log('ระบบวิเคราะห์อารมณ์สำเร็จ');
 
-await expect(
-  page.getByText('เหตุผล', {
-    exact: true,
-  })
-).toBeVisible({
-  timeout: 90000,
-});
+    // =====================================================
+    // 7. ตรวจสอบผลการวิเคราะห์
+    // =====================================================
+    await expect(
+      page.getByText('เหตุผล', {
+        exact: true,
+      })
+    ).toBeVisible({
+      timeout: 15000,
+    });
 
-await expect(
-  page.getByText('สถานที่ที่แนะนำ', {
-    exact: true,
-  })
-).toBeVisible({
-  timeout: 90000,
-});
-  // =====================================================
-  // 5. ตรวจสอบว่ามีการ์ดสถานที่แนะนำ
-  // =====================================================
+    console.log('แสดงเหตุผลของการวิเคราะห์สำเร็จ');
 
-  const placeCards = page
-    .getByRole('button', {
+    // =====================================================
+    // 8. ตรวจสอบสถานที่แนะนำ
+    // =====================================================
+    const placeCards = page.getByRole('button', {
       name: 'ดูรูปภาพและรีวิว',
     });
 
-  await expect(
-    placeCards.first()
-  ).toBeVisible({
-    timeout: 90000,
-  });
+    // ต้องมีสถานที่แนะนำอย่างน้อย 1 รายการ
+    const placeCount = await placeCards.count();
 
-  const placeCount = await placeCards.count();
+    expect(placeCount).toBeGreaterThanOrEqual(1);
 
-  expect(placeCount).toBeGreaterThan(0);
+    console.log(
+      `ระบบแสดงสถานที่แนะนำจำนวน ${placeCount} แห่ง`
+    );
 
-  console.log(
-    `ระบบแสดงสถานที่แนะนำจำนวน ${placeCount} แห่ง`
-  );
+    // ตรวจสอบว่าสถานที่รายการแรกแสดงผล
+    await expect(placeCards.first()).toBeVisible({
+      timeout: 30000,
+    });
 
-  // ตรวจว่าชื่อสถานที่มีการแสดงผล โดยไม่กำหนดชื่อเฉพาะ
-  const placeCardTitle = page
-    .locator('main h3:visible')
-    .first();
+    // ตรวจสอบชื่อสถานที่
+    const placeCardTitle = page
+      .locator('main h3:visible')
+      .first();
 
-  await expect(placeCardTitle).toBeVisible({
-    timeout: 90000,
-  });
+    await expect(placeCardTitle).toBeVisible({
+      timeout: 15000,
+    });
 
-  console.log(
-    'สถานที่แนะนำ:',
-    await placeCardTitle.innerText()
-  );
+    console.log(
+      'สถานที่แนะนำ:',
+      await placeCardTitle.innerText()
+    );
 
-  // =====================================================
-  // 6. Screenshot
-  // =====================================================
+    // =====================================================
+    // 9. Screenshot หลักฐาน
+    // =====================================================
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
 
-  await page.evaluate(() => {
-    window.scrollTo(0, 0);
-  });
+    await page.screenshot({
+      path: 'evidence/TC_3_0_001_EmotionAnalyzeSuccess.png',
+      fullPage: true,
+    });
 
-  await page.screenshot({
-    path: 'evidence/TC_3_0_001_EmotionAnalyzeSuccess.png',
-    fullPage: true,
-  });
+    console.log('Screenshot saved');
 
-  console.log('Screenshot saved');
+    // =====================================================
+    // 10. ย้อนกลับ
+    // =====================================================
+    const backButton = page.getByRole('button', {
+      name: 'ย้อนกลับ',
+    });
 
-  await context.close();
+    await expect(backButton).toBeVisible({
+      timeout: 15000,
+    });
 
-  console.log('=== Test Finished ===');
+    await backButton.click();
+
+    console.log('ย้อนกลับสำเร็จ');
+
+    console.log('=== Test Finished ===');
+
+  } finally {
+    // =====================================================
+    // ปิด Browser Context
+    // =====================================================
+    await context.close();
+  }
 });

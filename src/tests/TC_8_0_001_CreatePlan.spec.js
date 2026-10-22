@@ -16,6 +16,35 @@ test('TC 8.0.001 - การสร้างแผนการเดินทา�
   const page = await context.newPage();
 
   // =====================================================
+  // Mock Geolocation
+  // =====================================================
+  await page.addInitScript(() => {
+    const mockPosition = {
+      coords: {
+        latitude: 13.7563,
+        longitude: 100.5018,
+        accuracy: 10,
+        altitude: null,
+        altitudeAccuracy: null,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    };
+
+    navigator.geolocation.getCurrentPosition = (success) => {
+      success(mockPosition);
+    };
+
+    navigator.geolocation.watchPosition = (success) => {
+      success(mockPosition);
+      return 1;
+    };
+
+    navigator.geolocation.clearWatch = () => {};
+  });
+
+  // =====================================================
   // 1. Login
   // =====================================================
 
@@ -103,43 +132,39 @@ test('TC 8.0.001 - การสร้างแผนการเดินทา�
   // 5. เพิ่มกิจกรรมที่ 2
   // =====================================================
 
-  await expect(addActivityButton).toBeVisible({
-    timeout: 15000,
-  });
-
-  await addActivityButton.click();
+  await page.getByRole('button', { name: 'เพิ่มกิจกรรม' }).nth(1).click();
 
   await expect(
-    page.getByRole('button', { name: 'เลือก' }).nth(1)
+    page.getByRole('button', {
+      name: 'เลือก',
+    }).nth(1)
   ).toBeVisible({
     timeout: 15000,
   });
 
-  // เลือกสถานที่รายการที่ 2
   await page.getByRole('button', {
     name: 'เลือก',
   }).nth(1).click();
 
+
+
   // =====================================================
   // 6. เพิ่มกิจกรรมที่ 3
   // =====================================================
-
-  await expect(addActivityButton).toBeVisible({
-    timeout: 15000,
-  });
-
-  await addActivityButton.click();
+  await page.getByRole('button', { name: 'เพิ่มกิจกรรม' }).nth(2).click();
 
   await expect(
-    page.getByRole('button', { name: 'เลือก' }).nth(2)
+    page.getByRole('button', {
+      name: 'เลือก',
+    }).nth(2)
   ).toBeVisible({
     timeout: 15000,
   });
 
-  // เลือกสถานที่รายการที่ 3
   await page.getByRole('button', {
     name: 'เลือก',
   }).nth(2).click();
+  
 
   // =====================================================
 // 7. ตรวจสอบว่ามีกิจกรรมครบ 3 รายการ
@@ -158,7 +183,7 @@ await expect(
 await expect(
   page.getByRole('heading', {
     level: 3,
-    name: 'กิจกรรมที่ 2-',
+    name: 'กิจกรรมที่ 2',
     exact: true,
   })
 ).toBeVisible({

@@ -1,4 +1,5 @@
 require('dotenv').config();
+
 require('../Hooks/testResultHook');
 
 const { test, expect } = require('@playwright/test');
@@ -17,101 +18,163 @@ test('TC_3_0_003 - ตรวจสอบการกรอกข้อควา�
 
   const page = await context.newPage();
 
-  // =====================================================
-  // 1. Login
-  // =====================================================
+  try {
 
-  await page.goto('https://moodlocation.vercel.app/login');
+    // =====================================================
+    // Mock Geolocation
+    // =====================================================
+    await page.addInitScript(() => {
 
-  await page
-    .getByPlaceholder('example@mail.com')
-    .fill(process.env.MOOD_USER_EMAIL);
+      const mockPosition = {
+        coords: {
+          latitude: 13.7563,
+          longitude: 100.5018,
+          accuracy: 10,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null,
+        },
+        timestamp: Date.now(),
+      };
 
-  await page
-    .locator('input[type="password"]')
-    .fill(process.env.MOOD_USER_PASSWORD);
+      navigator.geolocation.getCurrentPosition = (
+        success,
+        error
+      ) => {
+        console.log('MOCK GEOLOCATION CALLED');
+        success(mockPosition);
+      };
 
-  await page.click('button[type="submit"]');
+      navigator.geolocation.watchPosition = (
+        success,
+        error
+      ) => {
+        console.log('MOCK GEOLOCATION WATCH CALLED');
+        success(mockPosition);
+        return 1;
+      };
 
-  // รอหน้า Home
-  await expect(
-    page.getByRole('textbox', {
+      navigator.geolocation.clearWatch = () => {};
+    });
+
+    // =====================================================
+    // 1. Login
+    // =====================================================
+
+    await page.goto('https://moodlocation.vercel.app/login', {
+      waitUntil: 'domcontentloaded',
+    });
+
+    await page
+      .getByPlaceholder('example@mail.com')
+      .fill(process.env.MOOD_USER_EMAIL);
+
+    await page
+      .locator('input[type="password"]')
+      .fill(process.env.MOOD_USER_PASSWORD);
+
+    await page.locator('button[type="submit"]').click();
+
+    // รอหน้า Home
+    await expect(
+      page.getByRole('textbox', {
+        name: 'พิมพ์บอกความรู้สึกกับ AI...',
+      })
+    ).toBeVisible({
+      timeout: 15000,
+    });
+
+    console.log('Login success');
+
+    // =====================================================
+    // 2. กรอกข้อความเป็นตัวเลข
+    // =====================================================
+
+    const aiInput = page.getByRole('textbox', {
       name: 'พิมพ์บอกความรู้สึกกับ AI...',
-    })
-  ).toBeVisible({
-    timeout: 15000,
-  });
+    });
 
-  // =====================================================
-  // 2. กรอกข้อความเป็นตัวเลข
-  // =====================================================
+    const inputData = '123456';
 
-  const aiInput = page.getByRole('textbox', {
-    name: 'พิมพ์บอกความรู้สึกกับ AI...',
-  });
+    await aiInput.fill(inputData);
 
-  const inputData = '123456';
+    await expect(aiInput).toHaveValue(inputData);
 
-  await aiInput.fill(inputData);
+    console.log('กรอกตัวเลขสำเร็จ');
 
-  await expect(aiInput).toHaveValue(inputData);
+    // =====================================================
+    // 3. กดค้นหา
+    // =====================================================
 
-  // =====================================================
-  // 3. กดค้นหา
-  // =====================================================
+    const searchButton = page.getByRole('button', {
+      name: 'ค้นหา',
+    });
 
-  const searchButton = page.getByRole('button', {
-    name: 'ค้นหา',
-  });
+    await expect(searchButton).toBeVisible({
+      timeout: 10000,
+    });
 
-  await expect(searchButton).toBeVisible({
-    timeout: 10000,
-  });
+    await searchButton.click();
 
-  await searchButton.click();
+    console.log('Search clicked');
 
- // =====================================================
-// 4. ตรวจสอบข้อความแจ้งเตือน
-// =====================================================
+    // =====================================================
+    // 4. ตรวจสอบข้อความแจ้งเตือน
+    // =====================================================
 
-const alertDialog = page.getByRole('dialog', {
-  name: 'แจ้งเตือน',
-});
+    const alertDialog = page.getByRole('dialog', {
+      name: 'แจ้งเตือน',
+    });
 
-await expect(alertDialog).toBeVisible({
-  timeout: 30000,
-});
+    await expect(alertDialog).toBeVisible({
+      timeout: 30000,
+    });
 
-await expect(
-  alertDialog.getByText(
-    'ข้อความไม่สามารถค้นหาได้ หรือไม่พบการค้นหาความรู้สึกนั้น (ไม่สามารถวิเคราะห์ตัวเลขได้)',
-    { exact: true }
-  )
-).toBeVisible({
-  timeout: 10000,
-});
-  // =====================================================
-  // 5. ตรวจสอบปุ่ม OK
-  // =====================================================
+    await expect(
+      alertDialog.getByText(
+        'ข้อความไม่สามารถค้นหาได้ หรือไม่พบการค้นหาความรู้สึกนั้น (ไม่สามารถวิเคราะห์ตัวเลขได้)',
+        {
+          exact: true,
+        }
+      )
+    ).toBeVisible({
+      timeout: 10000,
+    });
 
-  const okButton = alertDialog.getByRole('button', {
-    name: 'OK',
-  });
+    console.log('แสดงข้อความแจ้งเตือนถูกต้อง');
 
-  await expect(okButton).toBeVisible();
+    // =====================================================
+    // 5. ตรวจสอบปุ่ม OK
+    // =====================================================
 
-  // =====================================================
-  // 6. Screenshot
-  // =====================================================
+    const okButton = alertDialog.getByRole('button', {
+      name: 'OK',
+    });
 
-  await page.evaluate(() => {
-    window.scrollTo(0, 0);
-  });
+    await expect(okButton).toBeVisible();
 
-  await page.screenshot({
-    path: 'evidence/TC_3_0_003_NumberInput.png',
-    fullPage: true,
-  });
+    console.log('ปุ่ม OK แสดงถูกต้อง');
 
-  await context.close();
+    // =====================================================
+    // 6. Screenshot
+    // =====================================================
+
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
+
+    await page.screenshot({
+      path: 'evidence/TC_3_0_003_NumberInput.png',
+      fullPage: true,
+    });
+
+    console.log('Screenshot saved');
+
+  } finally {
+
+    // ปิด Browser Context
+    await context.close();
+
+  }
 });

@@ -70,7 +70,7 @@ test('TC 8.0.003 - ลบแผนการเดินทางสำเร็�
 
   await createPlanButton.click();
 
-  // =====================================================
+   // =====================================================
   // 4. เพิ่มกิจกรรมที่ 1
   // =====================================================
 
@@ -84,28 +84,27 @@ test('TC 8.0.003 - ลบแผนการเดินทางสำเร็�
 
   await addActivityButton.click();
 
-  await expect(
-    page.getByRole('button', { name: 'เลือก' }).nth(0)
-  ).toBeVisible({
+  const selectButtons = page.getByRole('button', {
+    name: 'เลือก',
+  });
+
+  await expect(selectButtons.first()).toBeVisible({
     timeout: 15000,
   });
 
-  await page.getByRole('button', {
-    name: 'เลือก',
-  }).nth(0).click();
+  // เลือกสถานที่รายการที่ 1
+  await selectButtons.nth(0).click();
 
   // =====================================================
   // 5. เพิ่มกิจกรรมที่ 2
   // =====================================================
 
-  await expect(addActivityButton).toBeVisible({
-    timeout: 15000,
-  });
-
-  await addActivityButton.click();
+  await page.getByRole('button', { name: 'เพิ่มกิจกรรม' }).nth(1).click();
 
   await expect(
-    page.getByRole('button', { name: 'เลือก' }).nth(1)
+    page.getByRole('button', {
+      name: 'เลือก',
+    }).nth(1)
   ).toBeVisible({
     timeout: 15000,
   });
@@ -114,18 +113,17 @@ test('TC 8.0.003 - ลบแผนการเดินทางสำเร็�
     name: 'เลือก',
   }).nth(1).click();
 
+
+
   // =====================================================
   // 6. เพิ่มกิจกรรมที่ 3
   // =====================================================
-
-  await expect(addActivityButton).toBeVisible({
-    timeout: 15000,
-  });
-
-  await addActivityButton.click();
+  await page.getByRole('button', { name: 'เพิ่มกิจกรรม' }).nth(2).click();
 
   await expect(
-    page.getByRole('button', { name: 'เลือก' }).nth(2)
+    page.getByRole('button', {
+      name: 'เลือก',
+    }).nth(2)
   ).toBeVisible({
     timeout: 15000,
   });
@@ -133,41 +131,41 @@ test('TC 8.0.003 - ลบแผนการเดินทางสำเร็�
   await page.getByRole('button', {
     name: 'เลือก',
   }).nth(2).click();
+  
 
   // =====================================================
-  // 7. ตรวจสอบว่ามีกิจกรรมครบ 3 รายการ
-  // =====================================================
+// 7. ตรวจสอบว่ามีกิจกรรมครบ 3 รายการ
+// =====================================================
 
-  await expect(
-    page.getByRole('heading', {
-      level: 3,
-      name: 'กิจกรรมที่ 1',
-      exact: true,
-    })
-  ).toBeVisible({
-    timeout: 10000,
-  });
+await expect(
+  page.getByRole('heading', {
+    level: 3,
+    name: 'กิจกรรมที่ 1',
+    exact: true,
+  })
+).toBeVisible({
+  timeout: 10000,
+});
 
-  await expect(
-    page.getByRole('heading', {
-      level: 3,
-      name: 'กิจกรรมที่ 2-',
-      exact: true,
-    })
-  ).toBeVisible({
-    timeout: 10000,
-  });
+await expect(
+  page.getByRole('heading', {
+    level: 3,
+    name: 'กิจกรรมที่ 2',
+    exact: true,
+  })
+).toBeVisible({
+  timeout: 10000,
+});
 
-  await expect(
-    page.getByRole('heading', {
-      level: 3,
-      name: 'กิจกรรมที่ 3',
-      exact: true,
-    })
-  ).toBeVisible({
-    timeout: 10000,
-  });
-
+await expect(
+  page.getByRole('heading', {
+    level: 3,
+    name: 'กิจกรรมที่ 3',
+    exact: true,
+  })
+).toBeVisible({
+  timeout: 10000,
+});
   // =====================================================
   // 8. ตั้งชื่อทริป
   // =====================================================

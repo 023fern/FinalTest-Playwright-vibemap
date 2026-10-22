@@ -1,9 +1,8 @@
 require('dotenv').config();
+
 require('../Hooks/testResultHook');
 
 const { test, expect } = require('@playwright/test');
-
-test.setTimeout(120000);
 
 test('TC_3_0_004 - ตรวจสอบข้อความที่มีอักขระพิเศษ', async ({ browser }) => {
 
@@ -18,9 +17,37 @@ test('TC_3_0_004 - ตรวจสอบข้อความที่มีอ�
   const page = await context.newPage();
 
   // =====================================================
+  // Mock Geolocation
+  // =====================================================
+  await page.addInitScript(() => {
+    const mockPosition = {
+      coords: {
+        latitude: 13.7563,
+        longitude: 100.5018,
+        accuracy: 10,
+        altitude: null,
+        altitudeAccuracy: null,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    };
+
+    navigator.geolocation.getCurrentPosition = (success) => {
+      success(mockPosition);
+    };
+
+    navigator.geolocation.watchPosition = (success) => {
+      success(mockPosition);
+      return 1;
+    };
+
+    navigator.geolocation.clearWatch = () => {};
+  });
+
+  // =====================================================
   // 1. Login
   // =====================================================
-
   await page.goto('https://moodlocation.vercel.app/login');
 
   await page
@@ -45,7 +72,6 @@ test('TC_3_0_004 - ตรวจสอบข้อความที่มีอ�
   // =====================================================
   // 2. กรอกข้อความที่มีอักขระพิเศษ
   // =====================================================
-
   const aiInput = page.getByRole('textbox', {
     name: 'พิมพ์บอกความรู้สึกกับ AI...',
   });
@@ -59,7 +85,6 @@ test('TC_3_0_004 - ตรวจสอบข้อความที่มีอ�
   // =====================================================
   // 3. กดค้นหา
   // =====================================================
-
   const searchButton = page.getByRole('button', {
     name: 'ค้นหา',
   });
@@ -73,7 +98,6 @@ test('TC_3_0_004 - ตรวจสอบข้อความที่มีอ�
   // =====================================================
   // 4. ตรวจสอบข้อความแจ้งเตือน
   // =====================================================
-
   const alertDialog = page.getByRole('dialog', {
     name: 'แจ้งเตือน',
   });
@@ -94,7 +118,6 @@ test('TC_3_0_004 - ตรวจสอบข้อความที่มีอ�
   // =====================================================
   // 5. ตรวจสอบปุ่ม OK
   // =====================================================
-
   const okButton = alertDialog.getByRole('button', {
     name: 'OK',
   });
@@ -106,7 +129,6 @@ test('TC_3_0_004 - ตรวจสอบข้อความที่มีอ�
   // =====================================================
   // 6. Screenshot
   // =====================================================
-
   await page.evaluate(() => {
     window.scrollTo(0, 0);
   });
